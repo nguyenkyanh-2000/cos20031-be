@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  normalizedEmail String? @unique @default(cuid())
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supplier Supplier?
+  buyer Buyer?
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  
+  userId   String @unique
+  user     User     @relation(fields: [userId], references: [id]) 
+
+  products  Product[]
+}
+
+model Buyer {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId   String @unique
+  user     User     @relation(fields: [userId], references: [id]) 
+}
+
+enum ProductCategory {
+  ELECTRONICS
+  FASHION
+  HOME
+  BEAUTY
+  FOOD
+  SPORTS
+  OTHER
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  category    ProductCategory @default(OTHER)
+  brand       String?
+  images      String[] 
+  variants    ProductVariant[] 
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category]) // index for faster lookups by category
+
+  supplierId    String
+  supplier      Supplier @relation(fields: [supplierId], references: [id])
+}
+
+model ProductVariant {
+  id          String           @id @default(cuid())
+  product     Product          @relation(fields: [productId], references: [id])
+  productId   String
+  name        String           
+  
+  price       Float            
+  stock       Int              
+  images      String[]        
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([productId]) // index for faster lookups by product
+}
+
+
+
