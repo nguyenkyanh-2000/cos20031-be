@@ -5,7 +5,7 @@ export class CreateSupplierInput {
   name: string;
 
   @IsEmail()
-  email: string;
+  businessEmail: string;
 
   @IsPhoneNumber()
   phone: string;

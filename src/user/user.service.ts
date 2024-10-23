@@ -9,12 +9,10 @@ import { normalizeEmail } from 'validator';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async createUser({ password, ...data }: Prisma.UserCreateInput): Promise<
-    User & {
-      supplier: Supplier | null;
-      buyer: Buyer | null;
-    }
-  > {
+  async createUser({
+    password,
+    ...data
+  }: Prisma.UserCreateInput): Promise<User> {
     const logger = new Logger(
       `${this.constructor.name}:${this.createUser.name}`,
     );
@@ -24,10 +22,6 @@ export class UserService {
     let user = await this.prisma.user.findFirst({
       where: {
         normalizedEmail: normalizeEmail(data.email) || data.email,
-      },
-      include: {
-        supplier: true,
-        buyer: true,
       },
     });
 
@@ -42,10 +36,6 @@ export class UserService {
         ...data,
         normalizedEmail: normalizeEmail(data.email) || data.email,
         password: await hash(password, BCRYPT_SALT_ROUND),
-      },
-      include: {
-        supplier: true,
-        buyer: true,
       },
     });
 
