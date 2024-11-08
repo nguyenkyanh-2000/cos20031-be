@@ -1,6 +1,8 @@
 import { IsNotEmpty, IsUUID } from 'class-validator';
 
 export class CreateProductInput {
+  brand: string;
+
   @IsNotEmpty()
   name: string;
 
@@ -11,5 +13,5 @@ export class CreateProductInput {
   productCategoryId: string;
 
   @IsUUID()
-  supplierId: string;
+  businessId: string;
 }

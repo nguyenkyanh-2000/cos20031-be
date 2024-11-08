@@ -8,7 +8,7 @@ export class ProductService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createProduct({
-    supplierId,
+    businessId,
     productCategoryId,
     ...input
   }: CreateProductInput): Promise<Product> {
@@ -18,16 +18,16 @@ export class ProductService {
 
     logger.log(`Creating product: ${input.name}`);
 
-    // Check if supplier exists
-    const supplier = await this.prisma.supplier.findUnique({
+    // Check if business exists
+    const business = await this.prisma.business.findUnique({
       where: {
-        id: supplierId,
+        id: businessId,
       },
     });
 
-    if (!supplier) {
-      logger.error(`Supplier not found: ${supplierId}`);
-      throw new Error(`Supplier not found: ${supplierId}`);
+    if (!business) {
+      logger.error(`Business not found: ${businessId}`);
+      throw new Error(`Business not found: ${businessId}`);
     }
 
     // Check if product category exists
@@ -47,9 +47,9 @@ export class ProductService {
     const product = await this.prisma.product.create({
       data: {
         ...input,
-        supplier: {
+        business: {
           connect: {
-            id: supplierId,
+            id: businessId,
           },
         },
         productCategory: {

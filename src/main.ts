@@ -2,14 +2,15 @@ import { HttpAdapterHost, NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import {
+  ClassSerializerInterceptor,
   HttpException,
   HttpStatus,
   INestApplication,
   ValidationPipe,
 } from '@nestjs/common';
-import { PrismaClientExceptionFilter } from './filters/prisma-client-exception.filter';
-import { PrismaClientValidationFilter } from './filters/prisma-client-validation.filter';
-import { ResponseInterceptor } from './interceptors/response.interceptor';
+import { PrismaClientExceptionFilter } from './core/filters/prisma-client-exception.filter';
+import { PrismaClientValidationFilter } from './core/filters/prisma-client-validation.filter';
+import { ResponseInterceptor } from './core/interceptors/response.interceptor';
 
 declare const module: any;
 
@@ -48,7 +49,10 @@ async function bootstrap() {
     new PrismaClientExceptionFilter(httpAdapter),
     new PrismaClientValidationFilter(httpAdapter),
   );
-  app.useGlobalInterceptors(new ResponseInterceptor(new Reflector()));
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector)),
+    new ResponseInterceptor(new Reflector()),
+  );
 
   // Hot Module Replacement
   if (module.hot) {

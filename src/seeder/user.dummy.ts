@@ -5,5 +5,8 @@ export const getDummyUser = (): CreateUserInput => {
   return {
     email: faker.internet.email(),
     password: faker.internet.password(),
+    name: faker.person.fullName(),
+    phone: faker.phone.number(),
+    address: faker.location.streetAddress(),
   };
 };

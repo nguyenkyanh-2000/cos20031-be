@@ -9,7 +9,7 @@ import {
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
-import { RESPONSE_MESSAGE_METADATA } from 'src/decorators/response-message.decorators';
+import { RESPONSE_MESSAGE_METADATA } from 'src/core/decorators/response-message.decorators';
 
 export type Response<T> = {
   statusCode: number;
@@ -45,7 +45,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
     response.status(status).json({
       statusCode: status,
       message: exception.message,
-      error: exception.name,
+      error: HttpStatus[status],
     });
   }
 
@@ -57,7 +57,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
       this.reflector.get<string>(
         RESPONSE_MESSAGE_METADATA,
         context.getHandler(),
-      ) || 'success';
+      ) || 'Success';
 
     return {
       message,

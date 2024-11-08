@@ -7,68 +7,59 @@ import { AppModule } from 'src/app.module';
 import { normalizeEmail } from 'validator';
 import { CreateUserInput } from 'src/user/user.dto';
 import { hash } from 'bcrypt';
-import { BCRYPT_SALT_ROUND } from 'src/auth/auth.const';
-import { getDummySupplier } from './supplier.dummy';
-import { getDummyBuyer } from './buyer.dummy';
+import { BCRYPT_SALT_ROUND } from 'src/core/auth/auth.const';
 import { CreateProductCategoryInput } from 'src/product-category/product-category.dto';
 import { getDummyProductCategory } from './product-category.dummy';
-import { ProductCategory } from '@prisma/client';
+import { BusinessMemberRole, ProductCategory } from '@prisma/client';
 import { getDummyProduct } from './product.dummy';
 import { CreateProductInput } from 'src/product/product.dto';
-
-const randomNumber = (min: number, max: number) =>
-  Math.floor(Math.random() * (max - min + 1)) + min;
-
-const randomElementsFromArray = <T>(arr: T[], n: number): T[] => {
-  return arr.sort(() => 0.5 - Math.random()).slice(0, n);
-};
+import { randomNumber, randomElementsFromArray } from './seeder.util';
+import { getDummyProductVariant } from './product-variant.dummy';
+import { CreateProductVariantInput } from 'src/product-variant/product-variant.dto';
+import { getDummyBusiness } from './business.dummy';
+import { CreateBusinessInput } from 'src/business/business.dto';
 
 async function seeder(
   prismaService: PrismaService,
   configs: {
-    nSuppliers: number;
-    nBuyers: number;
-    nCategories: number;
-    nMaxProductsPerSupplier?: number;
-    nMaxProductCategoriesPerSupplier?: number;
+    nCustomers: number;
+    nBusinesses: number;
+    nMaxStaffsPerBusiness: number;
+    nProductCategories: number;
+    nMaxProductsPerBusiness: number;
+    nMaxProductCategoriesPerBusiness: number;
+    nMaxProductVariantsPerProduct: number;
   } = {
-    nSuppliers: 50,
-    nBuyers: 50,
-    nCategories: 10,
-    nMaxProductCategoriesPerSupplier: 3,
-    nMaxProductsPerSupplier: 10,
+    nCustomers: 5,
+    nBusinesses: 2,
+    nMaxStaffsPerBusiness: 3,
+    nProductCategories: 3,
+    nMaxProductsPerBusiness: 3,
+    nMaxProductCategoriesPerBusiness: 1,
+    nMaxProductVariantsPerProduct: 3,
   },
 ) {
   const {
-    nSuppliers,
-    nBuyers,
-    nCategories,
-    nMaxProductCategoriesPerSupplier,
-    nMaxProductsPerSupplier,
+    nBusinesses,
+    nCustomers,
+    nMaxProductsPerBusiness,
+    nMaxProductCategoriesPerBusiness,
+    nMaxStaffsPerBusiness,
+    nMaxProductVariantsPerProduct,
+    nProductCategories,
   } = configs;
 
-  // Seed dummy buyers
+  const startTime = Date.now();
+
+  // Seed dummy customers user
   await each(
-    Array.from({ length: nBuyers }, getDummyUser),
-    async (user: CreateUserInput) => {
-      const dummyUser = await prismaService.user.create({
-        data: {
-          ...user,
-          normalizedEmail: normalizeEmail(user.email) || user.email,
-          password: await hash(user.password, BCRYPT_SALT_ROUND),
-        },
-      });
-
-      const { userId, ...input } = getDummyBuyer(dummyUser.id);
-
-      await prismaService.buyer.create({
+    Array.from({ length: nCustomers }, getDummyUser),
+    async (input: CreateUserInput) => {
+      await prismaService.user.create({
         data: {
           ...input,
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
+          email: normalizeEmail(input.email) || input.email,
+          password: await hash(input.password, BCRYPT_SALT_ROUND),
         },
       });
     },
@@ -78,7 +69,7 @@ async function seeder(
   const productCategories: ProductCategory[] = [];
 
   await each(
-    Array.from({ length: nCategories }, getDummyProductCategory),
+    Array.from({ length: nProductCategories }, getDummyProductCategory),
     async (category: CreateProductCategoryInput) => {
       const productCategory = await prismaService.productCategory.create({
         data: category,
@@ -88,52 +79,100 @@ async function seeder(
     },
   );
 
-  // Seed dummy suppliers.
+  // Seed dummy businesses
 
   await each(
-    Array.from({ length: nSuppliers }, getDummyUser),
-    async (user: CreateUserInput) => {
-      const dummyUser = await prismaService.user.create({
-        data: {
-          ...user,
-          normalizedEmail: normalizeEmail(user.email) || user.email,
-          password: await hash(user.password, BCRYPT_SALT_ROUND),
-        },
-      });
-
-      const { userId, ...input } = getDummySupplier(dummyUser.id);
-
-      const supplier = await prismaService.supplier.create({
+    Array.from({ length: nBusinesses }, getDummyBusiness),
+    async (input: CreateBusinessInput) => {
+      const business = await prismaService.business.create({
         data: {
           ...input,
-          user: {
-            connect: {
-              id: userId,
-            },
-          },
         },
       });
 
-      // Seed products for each supplier
-      const nProducts = randomNumber(0, nMaxProductsPerSupplier);
+      // Seed members fo each business
+      const nStaff = randomNumber(0, nMaxStaffsPerBusiness - 1);
+
+      // Always seed an owner
+      const ownerUser = await prismaService.user.create({
+        data: {
+          ...getDummyUser(),
+          email: normalizeEmail(getDummyUser().email) || getDummyUser().email,
+          password: await hash(getDummyUser().password, BCRYPT_SALT_ROUND),
+        },
+      });
+
+      await prismaService.businessMember.create({
+        data: {
+          business: {
+            connect: {
+              id: business.id,
+            },
+          },
+          user: {
+            connect: {
+              id: ownerUser.id,
+            },
+          },
+          role: BusinessMemberRole.OWNER,
+        },
+      });
+
+      // Seed staffs
+      await each(
+        Array.from({ length: nStaff }, getDummyUser),
+        async (input: CreateUserInput) => {
+          const user = await prismaService.user.create({
+            data: {
+              ...input,
+              email: normalizeEmail(input.email) || input.email,
+              password: await hash(input.password, BCRYPT_SALT_ROUND),
+            },
+          });
+
+          // Create a business member (staff or manager)
+          await prismaService.businessMember.create({
+            data: {
+              business: {
+                connect: {
+                  id: business.id,
+                },
+              },
+              user: {
+                connect: {
+                  id: user.id,
+                },
+              },
+            },
+          });
+        },
+      );
+
+      // Seed products for each business
+      const nProducts = randomNumber(0, nMaxProductsPerBusiness);
 
       if (nProducts === 0) {
         return;
       }
 
-      const nCategories = randomNumber(1, nMaxProductCategoriesPerSupplier);
+      const nBusinessCategories = randomNumber(
+        1,
+        nMaxProductCategoriesPerBusiness,
+      );
 
       const categories = randomElementsFromArray(
         productCategories,
-        nCategories,
+        nBusinessCategories,
       );
 
       const products = Array.from({ length: nProducts }, () => {
-        const category = categories[randomNumber(0, nCategories - 1)];
+        const category = categories[randomNumber(0, nBusinessCategories - 1)];
         return getDummyProduct({
           name: category.name,
           productCategoryId: category.id,
-          supplierId: supplier.id,
+          businessId: business.id,
+          // The business can supply other brands
+          brand: randomNumber(0, 1) === 1 ? business.name : null,
         });
       });
 
@@ -141,15 +180,15 @@ async function seeder(
         products,
         async ({
           productCategoryId,
-          supplierId,
+          businessId,
           ...input
         }: CreateProductInput) => {
-          await prismaService.product.create({
+          const product = await prismaService.product.create({
             data: {
               ...input,
-              supplier: {
+              business: {
                 connect: {
-                  id: supplierId,
+                  id: businessId,
                 },
               },
               productCategory: {
@@ -159,9 +198,39 @@ async function seeder(
               },
             },
           });
+
+          // For each product, create a random number of product variants
+          const nVariants = randomNumber(1, nMaxProductVariantsPerProduct);
+
+          await each(
+            Array.from({ length: nVariants }, () =>
+              getDummyProductVariant({
+                productName: product.name,
+                productId: product.id,
+              }),
+            ),
+            async ({ productId, ...input }: CreateProductVariantInput) => {
+              await prismaService.productVariant.create({
+                data: {
+                  ...input,
+                  product: {
+                    connect: {
+                      id: productId,
+                    },
+                  },
+                },
+              });
+            },
+          );
         },
       );
     },
+  );
+
+  const endTime = Date.now();
+
+  console.log(
+    `Seeder finished in ${(Number(endTime - startTime) / 1000).toPrecision(3)} seconds 🚀`,
   );
 }
 

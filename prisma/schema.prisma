@@ -26,37 +26,43 @@ model User {
   role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  name      String
+  phone     String?
+  address   String?
 
-  supplier Supplier?
-  buyer Buyer?
+  businessMember BusinessMember?
 }
 
-model Supplier {
+enum BusinessMemberRole {
+  OWNER
+  MANAGER
+  MEMBER
+}
+
+model BusinessMember {
+  id        String   @id @default(cuid())
+  role      BusinessMemberRole @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+
+  userId     String @unique
+  user       User @relation(fields: [userId], references: [id])
+}
+
+model Business {
   id        String   @id @default(cuid())
   name      String
-  businessEmail    String
+  email     String 
   phone     String
   address   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  
-  userId   String @unique
-  user     User     @relation(fields: [userId], references: [id]) 
-
   products  Product[]
-}
-
-model Buyer {
-  id        String   @id @default(cuid())
-  name      String
-  address   String?
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userId   String @unique
-  user     User     @relation(fields: [userId], references: [id]) 
+  members   BusinessMember[]
 }
 
 model ProductCategory {
@@ -82,14 +88,12 @@ model Product {
   productCategory      ProductCategory @relation(fields: [productCategoryId], references: [id]) 
 
 
-  supplierId    String
-  supplier      Supplier @relation(fields: [supplierId], references: [id])
+  businessId   String
+  business      Business @relation(fields: [businessId], references: [id])
 }
 
 model ProductVariant {
   id          String           @id @default(cuid())
-  product     Product          @relation(fields: [productId], references: [id])
-  productId   String
   name        String           
   
   price       Float            
@@ -98,6 +102,9 @@ model ProductVariant {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
+
+  product     Product          @relation(fields: [productId], references: [id])
+  productId   String
   @@index([productId]) // index for faster lookups by product
 }
 
