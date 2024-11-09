@@ -31,6 +31,7 @@ model User {
   address   String?
 
   businessMember BusinessMember?
+  aiChatSessions AIChatSession[]
 }
 
 enum BusinessMemberRole {
@@ -106,6 +107,52 @@ model ProductVariant {
   product     Product          @relation(fields: [productId], references: [id])
   productId   String
   @@index([productId]) // index for faster lookups by product
+}
+
+
+enum AIChatSessionStatus {
+  IN_PROGRESS
+  FINISHED
+}
+
+enum AIChatSessionType {
+  CUSTOMER_SERVICE
+}
+
+model AIChatSession {
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  finishedAt DateTime?
+
+  metadata Json?
+  type AIChatSessionType
+
+  status AIChatSessionStatus @default(IN_PROGRESS)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  history AIChatHistoryItem[]
+}
+
+enum HistoryItemRole {
+  SYSTEM
+  USER
+  MODEL
+  TOOL
+}
+
+model AIChatHistoryItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chatSessionId String
+  chatSession   AIChatSession @relation(fields: [chatSessionId], references: [id])
+
+  role    HistoryItemRole
+  content Json[]
 }
 
 

@@ -2,7 +2,11 @@ import { defineDotprompt } from '@genkit-ai/dotprompt';
 import { gemini15Flash8B } from '@genkit-ai/googleai';
 
 const template = `
+{{role "system"}}
 You are a customer service representative for a large online retailer.
+
+
+{{history}}
 
 {{role "user"}}
 {{query}}

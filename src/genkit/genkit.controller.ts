@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { GenkitService } from './genkit.service';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -8,10 +8,11 @@ export class GenkitController {
   constructor(private readonly genkitService: GenkitService) {}
 
   @Post('customer-service')
-  async handleCustomerService(@Body() body: any) {
+  async handleCustomerService(@Body() body: { query: string; userId: string }) {
+    const { query, userId } = body;
     return await this.genkitService.handleCustomerRequest({
-      query: body.query,
-      history: body.history,
+      query,
+      userId,
     });
   }
 }
