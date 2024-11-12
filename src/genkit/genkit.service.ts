@@ -5,12 +5,14 @@ import { CustomerServiceFlow } from './customer-service/customer-service.flow';
 import { runFlow } from '@genkit-ai/flow';
 import { GenkitSessionService } from './genkit-session.service';
 import { AIChatSessionType } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class GenkitService implements OnModuleInit {
   constructor(
     private customerServiceFlow: CustomerServiceFlow,
     private genkitSessionService: GenkitSessionService,
+    private prisma: PrismaService,
   ) {}
 
   async handleCustomerRequest(input: { query: string; userId: string }) {
@@ -34,11 +36,23 @@ export class GenkitService implements OnModuleInit {
       });
     }
 
+    // Find the business that the user is a member of
+    const business = await this.prisma.business.findFirst({
+      where: {
+        members: {
+          some: {
+            userId,
+          },
+        },
+      },
+    });
+
     return await runFlow(this.customerServiceFlow, {
       query,
       // System message not supported in flow
       history: history?.filter((item) => item.role !== 'system') || [],
       userId,
+      businessId: business ? business.id : '',
     });
   }
 

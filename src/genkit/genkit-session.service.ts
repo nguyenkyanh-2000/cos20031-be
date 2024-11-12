@@ -1,12 +1,14 @@
 import { MessageData } from '@genkit-ai/ai/model';
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  AIChatHistoryItem,
   AIChatSessionStatus,
   AIChatSessionType,
   HistoryItemRole,
 } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { convertHistoryItemToMessageData } from './genkit.util';
+import { AIChatSessionResponseType } from './genkit.const';
 
 @Injectable()
 export class GenkitSessionService {
@@ -127,14 +129,18 @@ export class GenkitSessionService {
   /**
    * Get the history of the in-progress chat session
    * by user id and type
-   * Persist the history in cache if it's not in cache.
    * @returns The history of the in-progress chat session or null if there is no in-progress chat session
    */
   async getInProgressChatSessionHistory(input: {
     type: AIChatSessionType;
     userId: string;
-  }): Promise<MessageData[] | null> {
-    const { userId, type } = input;
+    responseType?: AIChatSessionResponseType;
+  }): Promise<MessageData[] | null | AIChatHistoryItem[]> {
+    const {
+      userId,
+      type,
+      responseType = AIChatSessionResponseType.MESSAGE_DATA,
+    } = input;
 
     const dbSession = await this.prisma.aIChatSession.findFirst({
       where: {
@@ -146,6 +152,10 @@ export class GenkitSessionService {
         history: true,
       },
     });
+
+    if (responseType === AIChatSessionResponseType.AI_CHAT_HISTORY_ITEM) {
+      return dbSession ? dbSession.history : null;
+    }
 
     return dbSession
       ? dbSession.history.map(convertHistoryItemToMessageData)

@@ -33,6 +33,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const httpAdapter = app.get(HttpAdapterHost);
 
+  app.enableCors();
   app.setGlobalPrefix(process.env.GLOBAL_API_PREFIX);
   app.useGlobalPipes(
     new ValidationPipe({
@@ -43,6 +44,7 @@ async function bootstrap() {
         return new HttpException(result[0].message, HttpStatus.BAD_REQUEST);
       },
       stopAtFirstError: true,
+      transform: true,
     }),
   );
   app.useGlobalFilters(

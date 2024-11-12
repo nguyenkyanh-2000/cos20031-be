@@ -62,4 +62,27 @@ export class ProductService {
 
     return product;
   }
+
+  async getProducts({
+    businessId,
+  }: {
+    businessId: string;
+  }): Promise<Product[]> {
+    const logger = new Logger(
+      `${this.constructor.name}:${this.getProducts.name}`,
+    );
+
+    logger.log(`Getting available products for business ${businessId}`);
+
+    const products = await this.prisma.product.findMany({
+      where: {
+        businessId,
+      },
+      include: {
+        productCategory: true,
+      },
+    });
+
+    return products;
+  }
 }

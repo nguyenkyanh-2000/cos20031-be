@@ -14,5 +14,8 @@ export const randomNumber = (min: number, max: number): number =>
  * @returns An array containing n random elements from the input array.
  */
 export const randomElementsFromArray = <T>(arr: T[], n: number): T[] => {
+  if (n >= arr.length) {
+    return arr;
+  }
   return arr.sort(() => 0.5 - Math.random()).slice(0, n);
 };

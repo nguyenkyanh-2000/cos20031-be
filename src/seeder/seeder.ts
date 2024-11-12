@@ -166,7 +166,8 @@ async function seeder(
       );
 
       const products = Array.from({ length: nProducts }, () => {
-        const category = categories[randomNumber(0, nBusinessCategories - 1)];
+        const randomCategory = randomNumber(0, categories.length - 1);
+        const category = categories[randomCategory];
         return getDummyProduct({
           name: category.name,
           productCategoryId: category.id,
