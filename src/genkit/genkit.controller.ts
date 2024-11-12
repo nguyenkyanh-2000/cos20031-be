@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { GenkitService } from './genkit.service';
 import { ApiTags } from '@nestjs/swagger';
 import {
@@ -29,10 +29,13 @@ export class GenkitController {
   )
   async handleCustomerService(@Body() body: GenkitSessionInput) {
     const { query, userId } = body;
-    return await this.genkitService.handleCustomerRequest({
-      query,
-      userId,
-    });
+    const res: GenkitSessionOutput =
+      await this.genkitService.handleCustomerRequest({
+        query,
+        userId,
+      });
+
+    return res;
   }
 
   @Get('customer-service/:userId')
@@ -49,5 +52,15 @@ export class GenkitController {
       });
 
     return { history };
+  }
+
+  @Get('customer-service/:userId/finish')
+  async finishCustomerServiceChatSession(@Param('userId') userId: string) {
+    await this.genkitSessionService.finishChatSession(
+      userId,
+      AIChatSessionType.CUSTOMER_SERVICE,
+    );
+
+    return 'Chat session finished';
   }
 }
